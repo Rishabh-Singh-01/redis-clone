@@ -29,50 +29,49 @@ void deserialize_request(int client_fd, TCP_Server *tcp_server) {
       if (crlf_visited_count == 0 &&
           tcp_server->buffer[buffer_itr] == CRLF[0] &&
           tcp_server->buffer[buffer_itr + 1] == CRLF[1]) {
-        crlf_visited_count++;
 
         assert(tcp_server->buffer[buffer_itr - 2] == '*' &&
                "Error: Request should start with Arr Command");
         assert(tcp_server->buffer[buffer_itr - 1] > '0' &&
                "Error: Should have more than 0 args");
 
+        crlf_visited_count++;
         request.args = tcp_server->buffer[buffer_itr - 1] - '0';
-      } else {
+        buffer_itr += 2;
+        continue;
+      }
 
-        if ((crlf_visited_count > 0) &&
-            (crlf_visited_count <= (2 * request.args))) {
-          if (crlf_visited_count % 2 != 0 &&
-              (tcp_server->buffer[buffer_itr] == CRLF[0] &&
-               tcp_server->buffer[buffer_itr + 1] == CRLF[1])) {
+      if (crlf_visited_count > 0 && crlf_visited_count % 2 != 0 &&
+          (tcp_server->buffer[buffer_itr] == CRLF[0] &&
+           tcp_server->buffer[buffer_itr + 1] == CRLF[1])) {
+        assert(tcp_server->buffer[buffer_itr - 2] == '$' &&
+               "Error: Request should start with Arr Command");
+        assert(tcp_server->buffer[buffer_itr - 1] > '0' &&
+               "Error: Should have more than 0 args");
 
-            assert(tcp_server->buffer[buffer_itr - 2] == '$' &&
-                   "Error: Request should start with Arr Command");
-            assert(tcp_server->buffer[buffer_itr - 1] > '0' &&
-                   "Error: Should have more than 0 args");
+        crlf_visited_count++;
+        command_byte_size = tcp_server->buffer[buffer_itr - 1] - '0';
+        memset(req_bytes, '\0', sizeof(char) * 10);
+        buffer_itr += 2;
+        continue;
+      }
 
-            crlf_visited_count++;
-            command_byte_size = tcp_server->buffer[buffer_itr - 1] - '0';
-            memset(req_bytes, '\0', sizeof(char) * 10);
-          } else if (crlf_visited_count % 2 == 0 &&
-                     tcp_server->buffer[buffer_itr] != CRLF[1]) {
+      if (crlf_visited_count > 0 && crlf_visited_count % 2 == 0) {
+        req_bytes[command_byte_consumed] = tcp_server->buffer[buffer_itr];
+        command_byte_consumed++;
 
-            req_bytes[command_byte_consumed] = tcp_server->buffer[buffer_itr];
-            command_byte_consumed++;
-
-            if (command_byte_consumed == command_byte_size) {
-              req_bytes[command_byte_consumed + 1] = '\0';
-              printf("> %s\n", req_bytes);
-              command_byte_consumed = 0;
-              command_byte_size = 0;
-              buffer_itr += 2;
-              crlf_visited_count++;
-            }
-          }
+        if (command_byte_consumed == command_byte_size) {
+          req_bytes[command_byte_consumed + 1] = '\0';
+          printf("> %s\n", req_bytes);
+          command_byte_consumed = 0;
+          command_byte_size = 0;
+          buffer_itr += 3;
+          crlf_visited_count++;
+          continue;
         }
       }
       buffer_itr++;
     }
-
     int byte_sent = send(client_fd, "+PONG\r\n", 7, 0);
     if (byte_sent < 0) {
       perror("Error: Failed to write to client");
