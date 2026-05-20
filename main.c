@@ -1,6 +1,5 @@
-#include "./common/headers.h"
+#include "./resp/req.c"
 #include "./tcp/sock.c"
-#include "tcp/sock.h"
 
 int main() {
   int res = start_tcp_server(9999);

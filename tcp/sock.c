@@ -1,7 +1,4 @@
 #include "sock.h"
-#include <stddef.h>
-#include <stdio.h>
-#include <string.h>
 
 TCP_Server tcp_server;
 
@@ -61,29 +58,33 @@ int accept_and_read_conn() {
   printf("Info: Connection Accepted. Total Connections: %d\n",
          ++tcp_server.concurrent_conn);
 
-  ssize_t n;
-  while ((n = read(client_fd, tcp_server.buffer, tcp_server.buffer_size - 1)) >
-         0) {
-    (tcp_server.buffer)[n] = '\0';
-    printf("Info: Received from Conn: %s", tcp_server.buffer);
+  // ssize_t n;
 
-    int byte_sent = send(client_fd, tcp_server.buffer, n, 0);
-    if (byte_sent < 0) {
-      perror("Error: Failed to write to client");
-    }
-  };
-
-  if (n == 0) {
-    printf("Info: Connection closed\n");
-  } else {
-    perror("Error: Issue with connectio during close\n");
-  }
+  deserialize_request(client_fd, &tcp_server);
   close(client_fd);
+  // while ((n = read(client_fd, tcp_server.buffer, tcp_server.buffer_size - 1))
+  // >
+  //        0) {
+  //   (tcp_server.buffer)[n] = '\0';
+  //   printf("Info: Received from Conn: %s", tcp_server.buffer);
+  //
+  //   int byte_sent = send(client_fd, "+PONG\r\n", 7, 0);
+  //   if (byte_sent < 0) {
+  //     perror("Error: Failed to write to client");
+  //   }
+  // };
+  //
+  // if (n == 0) {
+  //   printf("Info: Connection closed\n");
+  // } else {
+  //   perror("Error: Issue with connectio during close\n");
+  // }
+  // close(client_fd);
+  //
+  // printf("Info: Connection Closed. Total Connections: %d\n",
+  //        --tcp_server.concurrent_conn);
 
-  printf("Info: Connection Closed. Total Connections: %d\n",
-         --tcp_server.concurrent_conn);
-
-  return n;
+  return 0;
 }
 
 /*
