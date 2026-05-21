@@ -1,90 +1,162 @@
 #include "./req.h"
 #include <arpa/inet.h>
 #include <stdio.h>
+#include <string.h>
 
 char CRLF[2] = {'\r', '\n'};
 
+void initialize_request(Request *request) {
+  request->req_arg_count = 10;
+  request->req_arg_size = 10;
+  request->req_arg_idx = 0;
+  request->req_command_type = Req_Invalid;
+  request->req_args = (char *)malloc(sizeof(char) * request->req_arg_count *
+                                     request->req_arg_size);
+  memset(request->req_args, '\0',
+         sizeof(char) * request->req_arg_count * request->req_arg_size);
+}
+
+void initialize_deserializer(Deserializer *state) {
+  state->bytes_read_count = 0;
+  state->read_buffer_offset_idx = 0;
+
+  state->crlf_visited_count = 0;
+  state->cur_arg_consumed_count = 0;
+  state->cur_arg_size = 0;
+  state->buffer_size = 1024;
+  state->buffer = (char *)malloc(sizeof(char) * 1024);
+  memset(state->buffer, '\0', sizeof(char) * 1024);
+  state->buffer_itr_idx = 0;
+}
+
+void extract_command(Request *request) {
+  if (strcasecmp(request->req_args, "PING") == 0) {
+    request->req_command_type = Req_Ping;
+  } else if (strcasecmp(request->req_args, "ECHO") == 0) {
+    request->req_command_type = Req_Echo;
+  } else {
+    request->req_command_type = Req_Invalid;
+  }
+}
+
+void print_hex(const char *s) {
+  while (*s) {
+    // %02x ensures at least 2 digits with leading zeros
+    printf("%02x ", (unsigned char)*s++);
+  }
+  printf("\n");
+}
+
+void send_response(int client_fd, Request *request) {
+  char *res;
+  int res_size = 0;
+  char *ptr = malloc(sizeof(char) * 100);
+  memset(ptr, '\0', sizeof(char) * 100);
+
+  if (request->req_command_type == Req_Ping) {
+    res = "+PONG\r\n";
+    res_size = strlen(res);
+  } else if (request->req_command_type == Req_Echo) {
+    printf("echo response: %s\n", request->req_args + request->req_arg_size);
+    char *res_temp = request->req_args + request->req_arg_size;
+    int res_temp_size = strlen(res_temp);
+    ptr[0] = '$';
+    ptr[1] = res_temp_size + '0';
+    ptr[2] = '\r';
+    ptr[3] = '\n';
+    strncpy(ptr + 4, res_temp, res_temp_size);
+    int new_res_size = strlen(ptr);
+    ptr[new_res_size] = '\r';
+    ptr[new_res_size + 1] = '\n';
+    print_hex(ptr);
+    res = ptr;
+    res_size = strlen(ptr);
+  } else {
+    printf("Random Response\n");
+    res = "+PONG\r\n";
+    res_size = strlen(res);
+  }
+  int byte_sent = send(client_fd, res, res_size, 0);
+  if (byte_sent < 0) {
+    perror("Error: Failed to write to client");
+  }
+}
+
 void deserialize_request(int client_fd, TCP_Server *tcp_server) {
-  printf("Inside the deserialize_request\n");
-  Request request = {};
-  request.args = 0;
-  request.requestType = (RequestType *)malloc(sizeof(RequestType) * 10);
+  // TODO: Update this to ensure that the single bytes send are also working
+  Request request;
+  initialize_request(&request);
 
-  int read_count = 0;
-  int read_buffer_offset_idx = 0;
+  Deserializer deserializer;
+  initialize_deserializer(&deserializer);
 
-  int crlf_visited_count = 0;
-  int command_byte_consumed = 0;
-  int command_byte_size = 0;
-  char *req_bytes = malloc(sizeof(char) * 10);
-  memset(req_bytes, '\0', sizeof(char) * 10);
+  while ((deserializer.bytes_read_count = read(client_fd, deserializer.buffer,
+                                               deserializer.buffer_size)) > 0) {
 
-  while ((read_count =
-              read(client_fd, tcp_server->buffer + read_buffer_offset_idx,
-                   tcp_server->buffer_size - read_buffer_offset_idx)) > 0) {
-    int buffer_itr = read_buffer_offset_idx;
-    read_buffer_offset_idx += read_count;
+    while (deserializer.buffer_itr_idx < deserializer.bytes_read_count) {
+      if (deserializer.crlf_visited_count == 0 &&
+          deserializer.buffer[deserializer.buffer_itr_idx] == CRLF[0] &&
+          deserializer.buffer[deserializer.buffer_itr_idx + 1] == CRLF[1]) {
 
-    while (buffer_itr < read_buffer_offset_idx - 1) {
-      if (crlf_visited_count == 0 &&
-          tcp_server->buffer[buffer_itr] == CRLF[0] &&
-          tcp_server->buffer[buffer_itr + 1] == CRLF[1]) {
-
-        assert(tcp_server->buffer[buffer_itr - 2] == '*' &&
+        assert(deserializer.buffer[deserializer.buffer_itr_idx - 2] == '*' &&
                "Error: Request should start with Arr Command");
-        assert(tcp_server->buffer[buffer_itr - 1] > '0' &&
+        assert(deserializer.buffer[deserializer.buffer_itr_idx - 1] > '0' &&
                "Error: Should have more than 0 args");
 
-        crlf_visited_count++;
-        request.args = tcp_server->buffer[buffer_itr - 1] - '0';
-        buffer_itr += 2;
+        deserializer.crlf_visited_count++;
+        request.req_arg_count =
+            deserializer.buffer[deserializer.buffer_itr_idx - 1] - '0';
+        deserializer.buffer_itr_idx += 2;
         continue;
       }
 
-      if (crlf_visited_count > 0 && crlf_visited_count % 2 != 0 &&
-          (tcp_server->buffer[buffer_itr] == CRLF[0] &&
-           tcp_server->buffer[buffer_itr + 1] == CRLF[1])) {
-        assert(tcp_server->buffer[buffer_itr - 2] == '$' &&
+      if (deserializer.crlf_visited_count > 0 &&
+          deserializer.crlf_visited_count % 2 != 0 &&
+          (deserializer.buffer[deserializer.buffer_itr_idx] == CRLF[0] &&
+           deserializer.buffer[deserializer.buffer_itr_idx + 1] == CRLF[1])) {
+
+        assert(deserializer.buffer[deserializer.buffer_itr_idx - 2] == '$' &&
                "Error: Request should start with Arr Command");
-        assert(tcp_server->buffer[buffer_itr - 1] > '0' &&
+        assert(deserializer.buffer[deserializer.buffer_itr_idx - 1] > '0' &&
                "Error: Should have more than 0 args");
 
-        crlf_visited_count++;
-        command_byte_size = tcp_server->buffer[buffer_itr - 1] - '0';
-        memset(req_bytes, '\0', sizeof(char) * 10);
-        buffer_itr += 2;
+        deserializer.crlf_visited_count++;
+        deserializer.cur_arg_size =
+            deserializer.buffer[deserializer.buffer_itr_idx - 1] - '0';
+        deserializer.buffer_itr_idx += 2;
         continue;
       }
 
-      if (crlf_visited_count > 0 && crlf_visited_count % 2 == 0) {
-        req_bytes[command_byte_consumed] = tcp_server->buffer[buffer_itr];
-        command_byte_consumed++;
+      if (deserializer.crlf_visited_count > 0 &&
+          deserializer.crlf_visited_count % 2 == 0) {
+        request.req_args[request.req_arg_idx * request.req_arg_size +
+                         deserializer.cur_arg_consumed_count] =
+            deserializer.buffer[deserializer.buffer_itr_idx];
+        deserializer.cur_arg_consumed_count++;
 
-        if (command_byte_consumed == command_byte_size) {
-          req_bytes[command_byte_consumed + 1] = '\0';
-          printf("> %s\n", req_bytes);
-          command_byte_consumed = 0;
-          command_byte_size = 0;
-          buffer_itr += 3;
-          crlf_visited_count++;
+        if (deserializer.cur_arg_consumed_count == deserializer.cur_arg_size) {
+          if (deserializer.crlf_visited_count == 2) {
+            extract_command(&request);
+          }
+
+          request.req_arg_idx++;
+          deserializer.cur_arg_consumed_count = 0;
+          deserializer.cur_arg_size = 0;
+          deserializer.buffer_itr_idx += 3;
+          deserializer.crlf_visited_count++;
           continue;
         }
       }
-      buffer_itr++;
+      deserializer.buffer_itr_idx++;
     }
-    int byte_sent = send(client_fd, "+PONG\r\n", 7, 0);
-    if (byte_sent < 0) {
-      perror("Error: Failed to write to client");
-    }
-    read_count = 0;
-    read_buffer_offset_idx = 0;
-    crlf_visited_count = 0;
-    command_byte_consumed = 0;
-    command_byte_size = 0;
-    memset(req_bytes, '\0', sizeof(char) * 10);
+
+    send_response(client_fd, &request);
+
+    initialize_deserializer(&deserializer);
+    initialize_request(&request);
   }
 
-  if (read_count == 0) {
+  if (deserializer.bytes_read_count == 0) {
     printf("Info: Connection closed\n");
   } else {
     perror("Error: Issue with connectio during close\n");

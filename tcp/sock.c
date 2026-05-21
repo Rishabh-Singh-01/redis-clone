@@ -58,8 +58,6 @@ int accept_and_read_conn() {
   printf("Info: Connection Accepted. Total Connections: %d\n",
          ++tcp_server.concurrent_conn);
 
-  // ssize_t n;
-
   deserialize_request(client_fd, &tcp_server);
   close(client_fd);
   // while ((n = read(client_fd, tcp_server.buffer, tcp_server.buffer_size - 1))
