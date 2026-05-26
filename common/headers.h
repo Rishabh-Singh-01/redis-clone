@@ -27,4 +27,7 @@ typedef struct TCP_Server {
   char *buffer;
 } TCP_Server;
 
+extern char CRLF[2];
+
 #endif // !COMMON_HEADERS
+//

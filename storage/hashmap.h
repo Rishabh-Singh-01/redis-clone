@@ -1,0 +1,4 @@
+#ifndef STORAGE_HASHMAP
+#define STORAGE_HASHMAP
+
+#endif // !STORAGE_HASHMAP
