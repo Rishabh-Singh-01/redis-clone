@@ -1,6 +1,7 @@
 #ifndef COMMON_HEADERS
 #define COMMON_HEADERS
 #include <assert.h>
+#include <stdbool.h>
 #include <stdio.h>
 typedef enum Command_Type_Enum {
   Req_Ping,

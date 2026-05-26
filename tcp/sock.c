@@ -58,29 +58,8 @@ int accept_and_read_conn() {
   printf("Info: Connection Accepted. Total Connections: %d\n",
          ++tcp_server.concurrent_conn);
 
-  deserialize_request(client_fd, &tcp_server);
+  execute_resp(client_fd, &tcp_server);
   close(client_fd);
-  // while ((n = read(client_fd, tcp_server.buffer, tcp_server.buffer_size - 1))
-  // >
-  //        0) {
-  //   (tcp_server.buffer)[n] = '\0';
-  //   printf("Info: Received from Conn: %s", tcp_server.buffer);
-  //
-  //   int byte_sent = send(client_fd, "+PONG\r\n", 7, 0);
-  //   if (byte_sent < 0) {
-  //     perror("Error: Failed to write to client");
-  //   }
-  // };
-  //
-  // if (n == 0) {
-  //   printf("Info: Connection closed\n");
-  // } else {
-  //   perror("Error: Issue with connectio during close\n");
-  // }
-  // close(client_fd);
-  //
-  // printf("Info: Connection Closed. Total Connections: %d\n",
-  //        --tcp_server.concurrent_conn);
 
   return 0;
 }
