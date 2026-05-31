@@ -6,20 +6,24 @@ void initialize_request(Request *request) {
   request->req_arg_count = 10;
   request->req_arg_size = 10;
   request->req_arg_idx = 0;
-  request->req_command_type = Req_Invalid;
+  request->req_command_type = Cmd_Invalid;
   request->req_args = (char *)malloc(sizeof(char) * request->req_arg_count *
                                      request->req_arg_size);
   memset(request->req_args, '\0',
          sizeof(char) * request->req_arg_count * request->req_arg_size);
 }
 
-void reset_request(Request *request) {
-  request->req_arg_count = 10;
-  request->req_arg_size = 10;
-  request->req_arg_idx = 0;
-  request->req_command_type = Req_Invalid;
-  memset(request->req_args, '\0',
-         sizeof(char) * request->req_arg_count * request->req_arg_size);
+void cleanup_request(Request *request) { free(request->req_args); }
+
+void cleanup_deserializer(Deserializer *deserializer) {
+  deserializer->bytes_read_count = 0;
+  deserializer->read_buffer_offset_idx = 0;
+  deserializer->crlf_visited_count = 0;
+  deserializer->cur_arg_consumed_count = 0;
+  deserializer->cur_arg_size = 0;
+  deserializer->buffer_size = 1024;
+  deserializer->buffer_itr_idx = 0;
+  free(deserializer->buffer);
 }
 
 void initialize_deserializer(Deserializer *deserializer) {

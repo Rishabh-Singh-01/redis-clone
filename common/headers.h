@@ -4,11 +4,14 @@
 #include <stdbool.h>
 #include <stdio.h>
 typedef enum Command_Type_Enum {
-  Req_Ping,
-  Req_Echo,
-  Req_Get,
-  Req_Set,
-  Req_Invalid
+  Cmd_Ping,
+  Cmd_Echo,
+  Cmd_Get,
+  Cmd_Set,
+  Cmd_Del,
+  Cmd_Expire,
+  Cmd_TTL,
+  Cmd_Invalid
 } Command_Type;
 
 typedef struct Request {
@@ -19,6 +22,13 @@ typedef struct Request {
   int req_arg_idx;
   char *req_args;
 } Request;
+
+typedef struct Response {
+  Command_Type res_command_type;
+  int res_size;
+  int result_size;
+  char *result;
+} Response;
 
 typedef struct TCP_Server {
   int socket_fd;

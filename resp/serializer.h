@@ -14,7 +14,9 @@ typedef struct Serialize_Response_State_Struct {
   int buffer_itr_idx;
 } Serializer;
 
+void cleanup_serializer(Serializer *serializer);
 void init_serializer(Serializer *serializer);
-void send_response(int client_fd, Request *request, Serializer *serializer);
+void send_response(int client_fd, Request *request, Response *response,
+                   Serializer *serializer);
 
 #endif // !RESP_SERIALIZERk

@@ -58,6 +58,7 @@ int accept_and_read_conn() {
   printf("Info: Connection Accepted. Total Connections: %d\n",
          ++tcp_server.concurrent_conn);
 
+  load_aof();
   execute_resp(client_fd, &tcp_server);
   close(client_fd);
 

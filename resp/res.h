@@ -6,6 +6,7 @@
 #include <string.h>
 #include <unistd.h>
 
-void execute_resp(int client_fd, TCP_Server *tcp_server);
+void initialize_response(Response *response);
+void cleanup_response(Response *response);
 
 #endif // !RESP_RES

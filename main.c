@@ -1,8 +1,11 @@
 #include "./command/dispatcher.c"
+#include "./common/utils.c"
 #include "./resp/command.c"
 #include "./resp/deserializer.c"
 #include "./resp/req.c"
+#include "./resp/res.c"
 #include "./resp/serializer.c"
+#include "./storage/aof.c"
 #include "./storage/hashmap.c"
 #include "./tcp/sock.c"
 

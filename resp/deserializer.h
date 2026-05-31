@@ -21,7 +21,8 @@ typedef struct Deserialize_Request_State_Struct {
 } Deserializer;
 
 void initialize_request(Request *request);
-void reset_request(Request *request);
+void cleanup_request(Request *request);
+void cleanup_deserializer(Deserializer *deserializer);
 void initialize_deserializer(Deserializer *deserializer);
 void execute_deserializer(Request *request, Deserializer *deserializer);
 
