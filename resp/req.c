@@ -48,16 +48,8 @@ void load_aof() {
         break;
       }
     }
-
-    printf("Deserializer line: %s\n", deserializer.buffer);
-    cleanup_serializer(&serializer);
-    cleanup_request(&request);
-    cleanup_response(&response);
-    cleanup_deserializer(&deserializer);
-    init_serializer(&serializer);
-    initialize_request(&request);
-    initialize_response(&response);
-    initialize_deserializer(&deserializer);
+    deserializer.bytes_read_count = strlen(deserializer.buffer);
+    deserializer.buffer_itr_idx = 0;
 
     execute_deserializer(&request, &deserializer);
     dispatch_command(&st_map, &request, &response);

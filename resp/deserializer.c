@@ -1,4 +1,5 @@
 #include "./deserializer.h"
+#include <stdio.h>
 
 char CRLF[2] = {'\r', '\n'};
 
@@ -14,6 +15,22 @@ void initialize_request(Request *request) {
 }
 
 void cleanup_request(Request *request) { free(request->req_args); }
+
+void debug_deserializer(Deserializer *deserializer) {
+  printf("Des: deserializer->bytes_read_count - %d\n",
+         deserializer->bytes_read_count);
+  printf("Des: deserializer->read_buffer_offset_idx - %d\n",
+         deserializer->read_buffer_offset_idx);
+  printf("Des: deserializer->crlf_visited_count - %d\n",
+         deserializer->crlf_visited_count);
+  printf("Des: deserializer->cur_arg_consumed_count - %d\n",
+         deserializer->cur_arg_consumed_count);
+  printf("Des: deserializer->cur_arg_size - %d\n", deserializer->cur_arg_size);
+  printf("Des: deserializer->buffer_size - %d\n", deserializer->buffer_size);
+  printf("Des: deserializer->buffer - %s\n", deserializer->buffer);
+  printf("Des: deserializer->buffer_itr_idx - %d\n",
+         deserializer->buffer_itr_idx);
+}
 
 void cleanup_deserializer(Deserializer *deserializer) {
   deserializer->bytes_read_count = 0;

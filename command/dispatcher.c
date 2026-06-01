@@ -36,13 +36,10 @@ void dispatch_command(Storage_hashmap *st_map, Request *request,
   case Cmd_Del: {
     int deleted_count = 0;
     for (int i = 1; i < request->req_arg_count; i++) {
-      printf("Hi htere\n");
       char *key = request->req_args + (i * request->req_arg_size);
       bool is_deleted = delete_kv_in_hashmap(st_map, key);
-      printf("Hi htere is deleted: %d\n", is_deleted);
       deleted_count += is_deleted ? 1 : 0;
     }
-    printf("Hi htere is deleted count: %d\n", deleted_count);
     snprintf(response->result, sizeof(response->result), "%d", deleted_count);
     break;
   }

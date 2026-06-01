@@ -58,7 +58,6 @@ int accept_and_read_conn() {
   printf("Info: Connection Accepted. Total Connections: %d\n",
          ++tcp_server.concurrent_conn);
 
-  load_aof();
   execute_resp(client_fd, &tcp_server);
   close(client_fd);
 
@@ -71,6 +70,7 @@ int accept_and_read_conn() {
  */
 int start_tcp_server(int port) {
   init_tcp_server(&tcp_server);
+  load_aof();
 
   if (create_tcp_listener(port) < 0) {
     perror("Error: Unable to create tcp listener");
