@@ -88,6 +88,12 @@ void execute_resp(int client_fd, TCP_Server *tcp_server) {
                                                deserializer.buffer_size)) > 0) {
     execute_deserializer(&request, &deserializer);
     append_to_aof(&request, &deserializer);
+    // NOTE: this is literally getting worse
+    initialize_request(&request);
+    reset_deserializer(&deserializer);
+    deserializer.bytes_read_count = strlen(deserializer.buffer);
+    execute_deserializer(&request, &deserializer);
+    printf("Here is the request: %d\n", request.req_command_type);
     dispatch_command(&st_map, &request, &response);
     send_response(client_fd, &request, &response, &serializer);
 

@@ -56,6 +56,17 @@ void initialize_deserializer(Deserializer *deserializer) {
   deserializer->buffer_itr_idx = 0;
 }
 
+void reset_deserializer(Deserializer *deserializer) {
+  deserializer->bytes_read_count = 0;
+  deserializer->read_buffer_offset_idx = 0;
+
+  deserializer->crlf_visited_count = 0;
+  deserializer->cur_arg_consumed_count = 0;
+  deserializer->cur_arg_size = 0;
+  deserializer->buffer_size = 1024;
+  deserializer->buffer_itr_idx = 0;
+}
+
 void execute_deserializer(Request *request, Deserializer *deserializer) {
   while (deserializer->buffer_itr_idx < deserializer->bytes_read_count) {
 
@@ -86,10 +97,13 @@ void execute_deserializer(Request *request, Deserializer *deserializer) {
     }
 
     if (is_idx_on_payload_header && is_idx_on_crlf) {
-      assert(deserializer->buffer[deserializer->buffer_itr_idx - 2] == '$');
-      assert(deserializer->buffer[deserializer->buffer_itr_idx - 1] > '0');
+      assert(deserializer->buffer[deserializer->buffer_itr_idx - 2] == '$' ||
+             deserializer->buffer[deserializer->buffer_itr_idx - 3] == '$');
       deserializer->cur_arg_size =
-          deserializer->buffer[deserializer->buffer_itr_idx - 1] - '0';
+          // NOTE: so bad that for timestamp i am literally hardcoding 10 hahaha
+          deserializer->buffer[deserializer->buffer_itr_idx - 2] == '$'
+              ? deserializer->buffer[deserializer->buffer_itr_idx - 1] - '0'
+              : 10;
       deserializer->buffer_itr_idx += 2;
       deserializer->crlf_visited_count++;
       continue;

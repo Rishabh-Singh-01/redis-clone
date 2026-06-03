@@ -11,6 +11,7 @@ typedef enum Command_Type_Enum {
   Cmd_Del,
   Cmd_Expire,
   Cmd_TTL,
+  CmdI_ExpiresAt,
   Cmd_Invalid
 } Command_Type;
 

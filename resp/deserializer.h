@@ -25,5 +25,6 @@ void cleanup_request(Request *request);
 void cleanup_deserializer(Deserializer *deserializer);
 void initialize_deserializer(Deserializer *deserializer);
 void execute_deserializer(Request *request, Deserializer *deserializer);
+void reset_deserializer(Deserializer *deserializer);
 
 #endif // !

@@ -24,10 +24,14 @@ void dispatch_command(Storage_hashmap *st_map, Request *request,
     break;
   }
   case Cmd_Set: {
-    time_t expiration_at =
-        request->req_arg_count == 5
-            ? time(NULL) + atoi(request->req_args + (4 * request->req_arg_size))
-            : 0;
+    // time_t expiration_at =
+    //     request->req_arg_count == 5
+    //         ? time(NULL) + atoi(request->req_args + (4 *
+    //         request->req_arg_size)) : 0;
+
+    char *temp;
+    time_t expiration_at = (time_t)strtoll(
+        request->req_args + (4 * request->req_arg_size), &temp, 10);
     set_kv_in_hashmap(st_map, request->req_args + (1 * request->req_arg_size),
                       request->req_args + (2 * request->req_arg_size),
                       expiration_at);

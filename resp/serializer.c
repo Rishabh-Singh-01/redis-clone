@@ -38,7 +38,7 @@ void send_response(int client_fd, Request *request, Response *response,
 
     } else if (request->req_arg_count == 5 &&
                (strcasecmp(request->req_args + (3 * request->req_arg_size),
-                           "EX") != 0)) {
+                           "EXAT") != 0)) {
       char *err_msg = "-ERR sytax error for 'set' command\r\n";
       memcpy(serializer->buffer, err_msg, strlen(err_msg));
 
