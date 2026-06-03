@@ -58,7 +58,8 @@ int accept_and_read_conn() {
   printf("Info: Connection Accepted. Total Connections: %d\n",
          ++tcp_server.concurrent_conn);
 
-  execute_resp(client_fd, &tcp_server);
+  // execute_resp(client_fd, &tcp_server);
+  execute_resp_new(client_fd);
   close(client_fd);
 
   return 0;

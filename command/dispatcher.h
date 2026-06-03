@@ -6,5 +6,7 @@
 
 void dispatch_command(Storage_hashmap *st_map, Request *request,
                       Response *response);
+void execute_norm_command(Storage_hashmap *st_map, Response *response,
+                          Command *command);
 
 #endif // !COMMAND_DISPATCHER

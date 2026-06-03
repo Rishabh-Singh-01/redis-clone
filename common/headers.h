@@ -24,6 +24,12 @@ typedef struct Request {
   char *req_args;
 } Request;
 
+typedef struct Command_Struct {
+  Command_Type command_type;
+  int argc;
+  char **args;
+} Command;
+
 typedef struct Response {
   Command_Type res_command_type;
   int res_size;

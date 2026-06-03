@@ -18,5 +18,8 @@ void cleanup_serializer(Serializer *serializer);
 void init_serializer(Serializer *serializer);
 void send_response(int client_fd, Request *request, Response *response,
                    Serializer *serializer);
+void normalize_command(Command *command);
+void send_response_new(int client_fd, Command *command, Response *response,
+                       Serializer *serializer);
 
 #endif // !RESP_SERIALIZERk

@@ -5,5 +5,6 @@
 
 void load_aof();
 void execute_resp(int client_fd, TCP_Server *tcp_server);
+void execute_resp_new(int client_fd);
 
 #endif // !RESP_REQ
