@@ -1,9 +1,24 @@
-#include "./dispatcher.h"
-#include <limits.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <time.h>
+#include "./executor.h"
+#include "./../engine/hashmap.h"
+
+void init_command(Command *command) {
+  command->command_type = Cmd_Invalid;
+  command->argc = 0;
+  command->args = NULL;
+}
+
+void reset_command(Command *command) {
+  // print_command(command);
+  command->command_type = Cmd_Invalid;
+  int idx = 0;
+  while (idx < command->argc) {
+    free(command->args[idx]);
+    idx++;
+  }
+  free(command->args);
+  command->argc = 0;
+  command->args = NULL;
+}
 
 bool validate_command(Command *command, Serializer *serializer) {
   char *err_msg;
@@ -57,6 +72,9 @@ void execute_norm_command(Storage_hashmap *st_map, Response *response,
   case Cmd_Set: {
     time_t expiration_at =
         command->argc == 4 ? time(NULL) + atoi(command->args[3]) : 0;
+    printf("Command C: %d\n", command->argc);
+    printf("Command: %s\n", command->args[0]);
+    printf("Command: %s\n", command->args[1]);
 
     // char *temp;
     // time_t expiration_at = (time_t)strtoll(
@@ -211,5 +229,11 @@ void dispatch_command(Storage_hashmap *st_map, Request *request,
   default: {
     // do nothing
   }
+  }
+}
+
+void normalize_command(Command *command) {
+  if (command->command_type == Cmd_Set) {
+    // do something
   }
 }

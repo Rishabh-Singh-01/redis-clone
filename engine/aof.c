@@ -1,8 +1,4 @@
 #include "./aof.h"
-#include <stddef.h>
-#include <stdio.h>
-#include <string.h>
-#include <time.h>
 
 void append_to_aof(Request *request, Deserializer *deserializer) {
   // TODO: currently we are appending at each cmd, very slow

@@ -1,7 +1,7 @@
 #ifndef STORAGE_AOF
 #define STORAGE_AOF
 
-#include "./../resp/deserializer.h"
+#include "./../common/headers.h"
 
 void append_to_aof(Request *request, Deserializer *deserializer);
 

@@ -1,4 +1,5 @@
 #include "sock.h"
+#include "./../resp/resp.h"
 
 TCP_Server tcp_server;
 
@@ -71,7 +72,7 @@ int accept_and_read_conn() {
  */
 int start_tcp_server(int port) {
   init_tcp_server(&tcp_server);
-  load_aof();
+  // load_aof();
 
   if (create_tcp_listener(port) < 0) {
     perror("Error: Unable to create tcp listener");

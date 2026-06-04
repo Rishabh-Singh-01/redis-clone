@@ -1,12 +1,4 @@
 #include "./serializer.h"
-#include <stdio.h>
-#include <string.h>
-
-void normalize_command(Command *command) {
-  if (command->command_type == Cmd_Set) {
-    // do something
-  }
-}
 
 void cleanup_serializer(Serializer *serializer) {
   serializer->buffer_itr_idx = 0;
@@ -19,6 +11,21 @@ void init_serializer(Serializer *serializer) {
   serializer->buffer_size = 100;
   serializer->buffer = (char *)malloc(sizeof(char) * serializer->buffer_size);
   memset(serializer->buffer, '\0', sizeof(char) * 100);
+}
+
+void init_response(Response *response) {
+  response->res_command_type = Cmd_Invalid;
+  response->res_size = 100;
+  response->result_size = 0;
+  response->result = (char *)malloc(sizeof(char) * response->res_size);
+  memset(response->result, '\0', sizeof(char) * response->res_size);
+}
+
+void cleanup_response(Response *response) {
+  response->res_command_type = Cmd_Invalid;
+  response->res_size = 100;
+  response->result_size = 0;
+  free(response->result);
 }
 
 void send_response(int client_fd, Request *request, Response *response,

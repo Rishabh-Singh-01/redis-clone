@@ -1,6 +1,4 @@
 #include "./hashmap.h"
-#include <stdio.h>
-#include <string.h>
 
 // TODO: a bad impl of hashmap (make it better)
 
@@ -24,6 +22,13 @@ void init_hashmap(Storage_hashmap *st_map) {
   for (int i = 0; i < st_map->buckets_count; i++) {
     (st_map->bucket)[i] = NULL;
   }
+}
+
+void cleanup_hashmap(Storage_hashmap *st_map) {
+  for (int i = 0; i < st_map->buckets_count; i++) {
+    free(st_map->bucket[i]);
+  }
+  free(st_map->bucket);
 }
 
 Storage_hashmap_internal_ll *get_kv_in_hashmap(Storage_hashmap *st_map,
