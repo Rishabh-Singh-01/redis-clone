@@ -33,6 +33,7 @@ typedef enum Response_Type_Enum {
   Res_Bulk_String,
   Res_Integer,
   Res_Null,
+  Res_Invalid,
 } Response_Type;
 
 typedef struct Command_Struct {

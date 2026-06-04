@@ -1,4 +1,5 @@
 #include "./serializer.h"
+#include <string.h>
 
 void init_serializer(Serializer *serializer) {
   serializer->buffer_itr_idx = 0;
@@ -14,7 +15,7 @@ void cleanup_serializer(Serializer *serializer) {
 }
 
 void init_response(Response *response) {
-  response->type = Res_Null;
+  response->type = Res_Invalid;
   response->argc = 0;
   response->args = NULL;
 }
@@ -30,6 +31,8 @@ void send_response_only(int client_fd, Response *response,
   } else if (response->type == Res_Bulk_String) {
     sprintf(serializer->buffer, "$%d\r\n%s\r\n", (int)strlen(response->args[0]),
             response->args[0]);
+  } else if (response->type == Res_Null) {
+    strcpy(serializer->buffer, "_\r\n");
   } else {
   }
   int byte_sent =

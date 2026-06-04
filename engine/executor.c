@@ -1,5 +1,6 @@
 #include "./executor.h"
 #include "./../engine/hashmap.h"
+#include <stdio.h>
 
 void init_command(Command *command) {
   command->command_type = Cmd_Invalid;
@@ -23,12 +24,23 @@ void reset_command(Command *command) {
 bool validate_command(Command *command, Serializer *serializer) {
   char *err_msg;
   bool is_valid_command = false;
+  if (command->command_type == Cmd_Set) {
+
+    printf("Command Type: %d\n", command->command_type);
+    printf("Command args: %d\n", command->argc);
+    printf("Command excomp: %d\n", command->command_type == Cmd_Set &&
+                                       command->argc == 4 &&
+                                       (strcasecmp(command->args[2], "ex")));
+  }
 
   if (command->command_type == Cmd_Get && command->argc != 1) {
     err_msg = "-ERR wrong number of arguments for 'get' command\r\n";
   } else if (command->command_type == Cmd_Set &&
              !(command->argc == 2 || command->argc == 4)) {
     err_msg = "-ERR wrong number of arguments for 'set' command\r\n";
+  } else if (command->command_type == Cmd_Set && command->argc == 4 &&
+             (strcasecmp(command->args[2], "ex") != 0)) {
+    err_msg = "-ERR invalid syntax for 'set' command\r\n";
   } else if (command->command_type == Cmd_Del && command->argc != 1) {
     err_msg = "-ERR wrong number of arguments for 'del' command\r\n";
   } else if (command->command_type == Cmd_Expire && command->argc != 2) {
@@ -58,21 +70,13 @@ void execute_norm_command(Storage_hashmap *st_map, Response *response,
     Storage_hashmap_internal_ll *res =
         get_kv_in_hashmap(st_map, command->args[0]);
     if (res == NULL) {
-      response->type = Res_Integer;
-      response->argc = 1;
-      response->args = (char **)malloc(sizeof(char *) * response->argc);
-      response->args[0] = (char *)malloc(sizeof(char) * 1);
-      snprintf(response->args[0], sizeof(response->args[0]), "%d", -1);
+      response->type = Res_Null;
       break;
     }
-    if (res != NULL && res->expires_at != 0 && time(NULL) > res->expires_at) {
+    if (res->expires_at != 0 && time(NULL) > res->expires_at) {
       // NOTE: htis is redundant, we are iterating over hmap twice
       delete_kv_in_hashmap(st_map, res->key);
-      response->type = Res_Integer;
-      response->argc = 1;
-      response->args = (char **)malloc(sizeof(char *) * response->argc);
-      response->args[0] = (char *)malloc(sizeof(char) * 1);
-      snprintf(response->args[0], sizeof(response->args[0]), "%d", -1);
+      response->type = Res_Null;
       break;
     }
 
@@ -84,15 +88,11 @@ void execute_norm_command(Storage_hashmap *st_map, Response *response,
     break;
   }
   case Cmd_Set: {
-    time_t expiration_at =
-        command->argc == 4 ? time(NULL) + atoi(command->args[3]) : 0;
+    time_t expiration_at = atoi(command->args[3]);
     printf("Command C: %d\n", command->argc);
     printf("Command: %s\n", command->args[0]);
     printf("Command: %s\n", command->args[1]);
 
-    // char *temp;
-    // time_t expiration_at = (time_t)strtoll(
-    //     request->req_args + (4 * request->req_arg_size), &temp, 10);
     set_kv_in_hashmap(st_map, command->args[0], command->args[1],
                       expiration_at);
     response->type = Res_Simple_String;
@@ -128,7 +128,7 @@ void execute_norm_command(Storage_hashmap *st_map, Response *response,
       snprintf(response->args[0], sizeof(response->args[0]), "%d", 0);
       break;
     }
-    if (res != NULL && res->expires_at != 0 && time(NULL) > res->expires_at) {
+    if (res->expires_at != 0 && time(NULL) > res->expires_at) {
       // NOTE: htis is redundant, we are iterating over hmap twice
       delete_kv_in_hashmap(st_map, res->key);
       response->type = Res_Integer;
@@ -139,8 +139,9 @@ void execute_norm_command(Storage_hashmap *st_map, Response *response,
       break;
     }
 
-    time_t expiration_at = time(NULL) + atoi(command->args[1]);
-    res->expires_at = expiration_at;
+    char *temp;
+    time_t expires_at = (time_t)strtoll(command->args[1], &temp, 10);
+    res->expires_at = expires_at;
     response->type = Res_Integer;
     response->argc = 1;
     response->args = (char **)malloc(sizeof(char *) * response->argc);
@@ -159,7 +160,7 @@ void execute_norm_command(Storage_hashmap *st_map, Response *response,
       snprintf(response->args[0], sizeof(response->args[0]), "%d", -2);
       break;
     }
-    if (res != NULL && res->expires_at == 0) {
+    if (res->expires_at == 0) {
       response->type = Res_Integer;
       response->argc = 1;
       response->args = (char **)malloc(sizeof(char *) * response->argc);
@@ -167,7 +168,7 @@ void execute_norm_command(Storage_hashmap *st_map, Response *response,
       snprintf(response->args[0], sizeof(response->args[0]), "%d", -1);
       break;
     }
-    if (res != NULL && time(NULL) > res->expires_at) {
+    if (time(NULL) > res->expires_at) {
       // NOTE: htis is redundant, we are iterating over hmap twice
       delete_kv_in_hashmap(st_map, res->key);
       response->type = Res_Integer;
@@ -309,6 +310,30 @@ void execute_norm_command(Storage_hashmap *st_map, Response *response,
 
 void normalize_command(Command *command) {
   if (command->command_type == Cmd_Set) {
-    // do something
+    if (command->argc == 4) {
+      time_t expires_at = time(NULL) + atoi(command->args[3]);
+      char *sym_exp_at = "exat";
+      free(command->args[2]);
+      command->args[2] = (char *)malloc(sizeof(char) * strlen(sym_exp_at));
+      strcpy(command->args[2], sym_exp_at);
+      free(command->args[3]);
+      command->args[3] =
+          (char *)malloc(sizeof(char) * 10); // 10 is the "len" of timestamp
+      sprintf(command->args[3], "%lld", (long long)expires_at);
+    } else {
+      char **p_args = (char **)realloc(command->args, sizeof(char **) * 4);
+      char *sym_exp_at = "exat";
+      command->args = p_args;
+      command->args[2] = (char *)malloc(sizeof(char) * 4);
+      strcpy(command->args[2], sym_exp_at);
+      command->args[3] = (char *)malloc(sizeof(char) * 1);
+      sprintf(command->args[3], "%d", 0);
+    }
+  } else if (command->command_type == Cmd_Expire) {
+    time_t expires_at = time(NULL) + atoi(command->args[1]);
+    free(command->args[1]);
+    command->args[1] = (char *)malloc(sizeof(char) * 10);
+    sprintf(command->args[1], "%lld", (long long)expires_at);
+  } else {
   }
 }
