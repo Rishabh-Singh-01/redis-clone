@@ -22,4 +22,8 @@ void normalize_command(Command *command);
 void send_response_new(int client_fd, Command *command, Response *response,
                        Serializer *serializer);
 
+void generate_response(Command *command, Response *response,
+                       Serializer *serializer);
+void send_response_only(int client_fd, Serializer *serializer);
+
 #endif // !RESP_SERIALIZERk

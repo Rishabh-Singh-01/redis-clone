@@ -87,9 +87,13 @@ void execute_resp_new(int client_fd) {
   while ((bytes_read_count =
               read(client_fd, req_parser.buffer, req_parser.buffer_size)) > 0) {
     exec_req_parser(&req_parser, &command);
-    normalize_command(&command);
-    execute_norm_command(&st_map, &response, &command);
-    send_response_new(client_fd, &command, &response, &serializer);
+    bool is_valid_cmd = validate_command(&command, &serializer);
+    if (is_valid_cmd) {
+      normalize_command(&command);
+      execute_norm_command(&st_map, &response, &command);
+    }
+    generate_response(&command, &response, &serializer);
+    send_response_only(client_fd, &serializer);
 
     reset_req_parser(&req_parser);
     reset_command(&command);

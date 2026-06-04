@@ -5,6 +5,37 @@
 #include <string.h>
 #include <time.h>
 
+bool validate_command(Command *command, Serializer *serializer) {
+  char *err_msg;
+  bool is_valid_command = false;
+
+  if (command->command_type == Cmd_Get && command->argc != 1) {
+    err_msg = "-ERR wrong number of arguments for 'get' command\r\n";
+  } else if (command->command_type == Cmd_Set &&
+             !(command->argc == 2 || command->argc == 4)) {
+    err_msg = "-ERR wrong number of arguments for 'set' command\r\n";
+  } else if (command->command_type == Cmd_Del && command->argc != 1) {
+    err_msg = "-ERR wrong number of arguments for 'del' command\r\n";
+  } else if (command->command_type == Cmd_Expire && command->argc != 2) {
+    err_msg = "-ERR wrong number of arguments for 'expire' command\r\n";
+  } else if (command->command_type == Cmd_TTL && command->argc != 1) {
+    err_msg = "-ERR wrong number of arguments for 'ttl' command\r\n";
+  } else if (command->command_type == Cmd_Echo && command->argc != 1) {
+    err_msg = "-ERR wrong number of arguments for 'echo' command\r\n";
+  } else if (command->command_type == Cmd_Ping && command->argc != 0) {
+    err_msg = "-ERR wrong number of arguments for 'echo' command\r\n";
+  } else if (command->command_type == Cmd_Invalid) {
+    err_msg = "-ERR unknown command\r\n";
+  } else {
+    is_valid_command = true;
+  }
+
+  if (!is_valid_command) {
+    memcpy(serializer->buffer, err_msg, strlen(err_msg));
+  }
+  return is_valid_command;
+}
+
 void execute_norm_command(Storage_hashmap *st_map, Response *response,
                           Command *command) {
   switch (command->command_type) {
