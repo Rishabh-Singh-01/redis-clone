@@ -3,6 +3,6 @@
 
 #include "./../common/headers.h"
 
-void append_to_aof(Request *request, Deserializer *deserializer);
+// void append_to_aof(Request *request, Deserializer *deserializer);
 
 #endif // !STORAGE_AOF

@@ -28,14 +28,12 @@ typedef enum Command_Type_Enum {
   Cmd_Invalid
 } Command_Type;
 
-typedef struct Request {
-  int req_split_count;
-  Command_Type req_command_type;
-  int req_arg_size;
-  int req_arg_count;
-  int req_arg_idx;
-  char *req_args;
-} Request;
+typedef enum Response_Type_Enum {
+  Res_Simple_String,
+  Res_Bulk_String,
+  Res_Integer,
+  Res_Null,
+} Response_Type;
 
 typedef struct Command_Struct {
   Command_Type command_type;
@@ -44,10 +42,9 @@ typedef struct Command_Struct {
 } Command;
 
 typedef struct Response {
-  Command_Type res_command_type;
-  int res_size;
-  int result_size;
-  char *result;
+  Response_Type type;
+  int argc;
+  char **args;
 } Response;
 
 typedef struct TCP_Server {
@@ -58,18 +55,6 @@ typedef struct TCP_Server {
 } TCP_Server;
 
 extern char CRLF[2];
-
-typedef struct Deserialize_Request_State_Struct {
-  int bytes_read_count;
-  int read_buffer_offset_idx;
-
-  int crlf_visited_count;
-  int cur_arg_consumed_count;
-  int cur_arg_size;
-  int buffer_size;
-  char *buffer;
-  int buffer_itr_idx;
-} Deserializer;
 
 typedef struct Req_Parser {
   int buffer_size;

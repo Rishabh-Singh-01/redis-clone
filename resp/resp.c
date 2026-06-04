@@ -4,14 +4,11 @@
 #include "./../resp/deserializer.h"
 #include "./../resp/serializer.h"
 
-Request request;
-Response response;
-Deserializer deserializer;
-Serializer serializer;
-Storage_hashmap st_map;
-
-Command command;
 Req_Parser req_parser;
+Command command;
+Storage_hashmap st_map;
+Response response;
+Serializer serializer;
 
 // TODO: start from here the aof impl
 // void load_aof() {
@@ -111,15 +108,14 @@ void execute_resp_new(int client_fd) {
       normalize_command(&command);
       execute_norm_command(&st_map, &response, &command);
     }
-    generate_response(&command, &response, &serializer);
-    send_response_only(client_fd, &serializer);
+    send_response_only(client_fd, &response, &serializer);
 
     reset_resp_sm();
   }
 
   cleanup_resp_sm();
 
-  if (deserializer.bytes_read_count != 0) {
+  if (bytes_read_count != 0) {
     perror("Error: Issue with connectio during close\n");
   }
   close(client_fd);

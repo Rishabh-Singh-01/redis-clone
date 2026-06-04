@@ -58,15 +58,29 @@ void execute_norm_command(Storage_hashmap *st_map, Response *response,
     Storage_hashmap_internal_ll *res =
         get_kv_in_hashmap(st_map, command->args[0]);
     if (res == NULL) {
+      response->type = Res_Integer;
+      response->argc = 1;
+      response->args = (char **)malloc(sizeof(char *) * response->argc);
+      response->args[0] = (char *)malloc(sizeof(char) * 1);
+      snprintf(response->args[0], sizeof(response->args[0]), "%d", -1);
       break;
     }
     if (res != NULL && res->expires_at != 0 && time(NULL) > res->expires_at) {
       // NOTE: htis is redundant, we are iterating over hmap twice
       delete_kv_in_hashmap(st_map, res->key);
+      response->type = Res_Integer;
+      response->argc = 1;
+      response->args = (char **)malloc(sizeof(char *) * response->argc);
+      response->args[0] = (char *)malloc(sizeof(char) * 1);
+      snprintf(response->args[0], sizeof(response->args[0]), "%d", -1);
       break;
     }
 
-    strcpy(response->result, res->value);
+    response->type = Res_Bulk_String;
+    response->argc = 1;
+    response->args = (char **)malloc(sizeof(char *) * response->argc);
+    response->args[0] = (char *)malloc(sizeof(char) * strlen(res->value));
+    strcpy(response->args[0], res->value);
     break;
   }
   case Cmd_Set: {
@@ -81,6 +95,11 @@ void execute_norm_command(Storage_hashmap *st_map, Response *response,
     //     request->req_args + (4 * request->req_arg_size), &temp, 10);
     set_kv_in_hashmap(st_map, command->args[0], command->args[1],
                       expiration_at);
+    response->type = Res_Simple_String;
+    response->argc = 1;
+    response->args = (char **)malloc(sizeof(char *) * response->argc);
+    response->args[0] = (char *)malloc(sizeof(char) * 2);
+    strcpy(response->args[0], "OK");
     break;
   }
   case Cmd_Del: {
@@ -90,147 +109,203 @@ void execute_norm_command(Storage_hashmap *st_map, Response *response,
       bool is_deleted = delete_kv_in_hashmap(st_map, key);
       deleted_count += is_deleted ? 1 : 0;
     }
-    snprintf(response->result, sizeof(response->result), "%d", deleted_count);
+    response->type = Res_Integer;
+    response->argc = 1;
+    response->args = (char **)malloc(sizeof(char *) * response->argc);
+    // 2 since i am not going to be deleting more than 2 elems
+    response->args[0] = (char *)malloc(sizeof(char) * 2);
+    snprintf(response->args[0], sizeof(response->args[0]), "%d", deleted_count);
     break;
   }
   case Cmd_Expire: {
     Storage_hashmap_internal_ll *res =
         get_kv_in_hashmap(st_map, command->args[0]);
     if (res == NULL) {
-      snprintf(response->result, sizeof(response->result), "%d", 0);
+      response->type = Res_Integer;
+      response->argc = 1;
+      response->args = (char **)malloc(sizeof(char *) * response->argc);
+      response->args[0] = (char *)malloc(sizeof(char) * 1);
+      snprintf(response->args[0], sizeof(response->args[0]), "%d", 0);
       break;
     }
     if (res != NULL && res->expires_at != 0 && time(NULL) > res->expires_at) {
       // NOTE: htis is redundant, we are iterating over hmap twice
       delete_kv_in_hashmap(st_map, res->key);
-      snprintf(response->result, sizeof(response->result), "%d", 0);
+      response->type = Res_Integer;
+      response->argc = 1;
+      response->args = (char **)malloc(sizeof(char *) * response->argc);
+      response->args[0] = (char *)malloc(sizeof(char) * 1);
+      snprintf(response->args[0], sizeof(response->args[0]), "%d", 0);
       break;
     }
 
     time_t expiration_at = time(NULL) + atoi(command->args[1]);
     res->expires_at = expiration_at;
-    snprintf(response->result, sizeof(response->result), "%d", 1);
+    response->type = Res_Integer;
+    response->argc = 1;
+    response->args = (char **)malloc(sizeof(char *) * response->argc);
+    response->args[0] = (char *)malloc(sizeof(char) * 1);
+    snprintf(response->args[0], sizeof(response->args[0]), "%d", 1);
     break;
   }
   case Cmd_TTL: {
     Storage_hashmap_internal_ll *res =
         get_kv_in_hashmap(st_map, command->args[0]);
     if (res == NULL) {
-      snprintf(response->result, sizeof(response->result), "%d", -2);
+      response->type = Res_Integer;
+      response->argc = 1;
+      response->args = (char **)malloc(sizeof(char *) * response->argc);
+      response->args[0] = (char *)malloc(sizeof(char) * 1);
+      snprintf(response->args[0], sizeof(response->args[0]), "%d", -2);
       break;
     }
     if (res != NULL && res->expires_at == 0) {
-      snprintf(response->result, sizeof(response->result), "%d", -1);
+      response->type = Res_Integer;
+      response->argc = 1;
+      response->args = (char **)malloc(sizeof(char *) * response->argc);
+      response->args[0] = (char *)malloc(sizeof(char) * 1);
+      snprintf(response->args[0], sizeof(response->args[0]), "%d", -1);
       break;
     }
     if (res != NULL && time(NULL) > res->expires_at) {
       // NOTE: htis is redundant, we are iterating over hmap twice
       delete_kv_in_hashmap(st_map, res->key);
-      snprintf(response->result, sizeof(response->result), "%d", -2);
+      response->type = Res_Integer;
+      response->argc = 1;
+      response->args = (char **)malloc(sizeof(char *) * response->argc);
+      response->args[0] = (char *)malloc(sizeof(char) * 1);
+      snprintf(response->args[0], sizeof(response->args[0]), "%d", -2);
       break;
     }
 
     time_t remaining_time = res->expires_at - time(NULL);
-    snprintf(response->result, sizeof(response->result), "%d",
+    response->type = Res_Integer;
+    response->argc = 1;
+    response->args = (char **)malloc(sizeof(char *) * response->argc);
+    response->args[0] = (char *)malloc(sizeof(char) * 2);
+    snprintf(response->args[0], sizeof(response->args[0]), "%d",
              (int)remaining_time);
     break;
   }
+  case Cmd_Ping: {
+    response->type = Res_Simple_String;
+    response->argc = 1;
+    response->args = (char **)malloc(sizeof(char *) * response->argc);
+    response->args[0] = (char *)malloc(sizeof(char) * 4);
+    strcpy(response->args[0], "Pong");
+    break;
+  }
+  case Cmd_Echo: {
+    response->type = Res_Bulk_String;
+    response->argc = 1;
+    response->args = (char **)malloc(sizeof(char *) * response->argc);
+    response->args[0] = (char *)malloc(sizeof(char) * strlen(command->args[0]));
+    strcpy(response->args[0], command->args[0]);
+    break;
+  }
   default: {
-    // do nothing
+    response->type = Res_Simple_String;
+    response->argc = 1;
+    response->args = (char **)malloc(sizeof(char *) * response->argc);
+    response->args[0] = (char *)malloc(sizeof(char) * 4);
+    strcpy(response->args[0], "Pong");
   }
   }
 }
 
-void dispatch_command(Storage_hashmap *st_map, Request *request,
-                      Response *response) {
-  switch (request->req_command_type) {
-  case Cmd_Get: {
-    Storage_hashmap_internal_ll *res = get_kv_in_hashmap(
-        st_map, request->req_args + (1 * request->req_arg_size));
-    if (res == NULL) {
-      break;
-    }
-    if (res != NULL && res->expires_at != 0 && time(NULL) > res->expires_at) {
-      // NOTE: htis is redundant, we are iterating over hmap twice
-      delete_kv_in_hashmap(st_map, res->key);
-      break;
-    }
-
-    strcpy(response->result, res->value);
-    break;
-  }
-  case Cmd_Set: {
-    // time_t expiration_at =
-    //     request->req_arg_count == 5
-    //         ? time(NULL) + atoi(request->req_args + (4 *
-    //         request->req_arg_size)) : 0;
-
-    char *temp;
-    time_t expiration_at = (time_t)strtoll(
-        request->req_args + (4 * request->req_arg_size), &temp, 10);
-    set_kv_in_hashmap(st_map, request->req_args + (1 * request->req_arg_size),
-                      request->req_args + (2 * request->req_arg_size),
-                      expiration_at);
-    break;
-  }
-  case Cmd_Del: {
-    int deleted_count = 0;
-    for (int i = 1; i < request->req_arg_count; i++) {
-      char *key = request->req_args + (i * request->req_arg_size);
-      bool is_deleted = delete_kv_in_hashmap(st_map, key);
-      deleted_count += is_deleted ? 1 : 0;
-    }
-    snprintf(response->result, sizeof(response->result), "%d", deleted_count);
-    break;
-  }
-  case Cmd_Expire: {
-    Storage_hashmap_internal_ll *res = get_kv_in_hashmap(
-        st_map, request->req_args + (1 * request->req_arg_size));
-    if (res == NULL) {
-      snprintf(response->result, sizeof(response->result), "%d", 0);
-      break;
-    }
-    if (res != NULL && res->expires_at != 0 && time(NULL) > res->expires_at) {
-      // NOTE: htis is redundant, we are iterating over hmap twice
-      delete_kv_in_hashmap(st_map, res->key);
-      snprintf(response->result, sizeof(response->result), "%d", 0);
-      break;
-    }
-
-    time_t expiration_at =
-        time(NULL) + atoi(request->req_args + (2 * request->req_arg_size));
-    res->expires_at = expiration_at;
-    snprintf(response->result, sizeof(response->result), "%d", 1);
-    break;
-  }
-  case Cmd_TTL: {
-    Storage_hashmap_internal_ll *res = get_kv_in_hashmap(
-        st_map, request->req_args + (1 * request->req_arg_size));
-    if (res == NULL) {
-      snprintf(response->result, sizeof(response->result), "%d", -2);
-      break;
-    }
-    if (res != NULL && res->expires_at == 0) {
-      snprintf(response->result, sizeof(response->result), "%d", -1);
-      break;
-    }
-    if (res != NULL && time(NULL) > res->expires_at) {
-      // NOTE: htis is redundant, we are iterating over hmap twice
-      delete_kv_in_hashmap(st_map, res->key);
-      snprintf(response->result, sizeof(response->result), "%d", -2);
-      break;
-    }
-
-    time_t remaining_time = res->expires_at - time(NULL);
-    snprintf(response->result, sizeof(response->result), "%d",
-             (int)remaining_time);
-    break;
-  }
-  default: {
-    // do nothing
-  }
-  }
-}
+// void dispatch_command(Storage_hashmap *st_map, Request *request,
+//                       Response *response) {
+//   switch (request->req_command_type) {
+//   case Cmd_Get: {
+//     Storage_hashmap_internal_ll *res = get_kv_in_hashmap(
+//         st_map, request->req_args + (1 * request->req_arg_size));
+//     if (res == NULL) {
+//       break;
+//     }
+//     if (res != NULL && res->expires_at != 0 && time(NULL) > res->expires_at)
+//     {
+//       // NOTE: htis is redundant, we are iterating over hmap twice
+//       delete_kv_in_hashmap(st_map, res->key);
+//       break;
+//     }
+//
+//     strcpy(response->result, res->value);
+//     break;
+//   }
+//   case Cmd_Set: {
+//     // time_t expiration_at =
+//     //     request->req_arg_count == 5
+//     //         ? time(NULL) + atoi(request->req_args + (4 *
+//     //         request->req_arg_size)) : 0;
+//
+//     char *temp;
+//     time_t expiration_at = (time_t)strtoll(
+//         request->req_args + (4 * request->req_arg_size), &temp, 10);
+//     set_kv_in_hashmap(st_map, request->req_args + (1 *
+//     request->req_arg_size),
+//                       request->req_args + (2 * request->req_arg_size),
+//                       expiration_at);
+//     break;
+//   }
+//   case Cmd_Del: {
+//     int deleted_count = 0;
+//     for (int i = 1; i < request->req_arg_count; i++) {
+//       char *key = request->req_args + (i * request->req_arg_size);
+//       bool is_deleted = delete_kv_in_hashmap(st_map, key);
+//       deleted_count += is_deleted ? 1 : 0;
+//     }
+//     snprintf(response->result, sizeof(response->result), "%d",
+//     deleted_count); break;
+//   }
+//   case Cmd_Expire: {
+//     Storage_hashmap_internal_ll *res = get_kv_in_hashmap(
+//         st_map, request->req_args + (1 * request->req_arg_size));
+//     if (res == NULL) {
+//       snprintf(response->result, sizeof(response->result), "%d", 0);
+//       break;
+//     }
+//     if (res != NULL && res->expires_at != 0 && time(NULL) > res->expires_at)
+//     {
+//       // NOTE: htis is redundant, we are iterating over hmap twice
+//       delete_kv_in_hashmap(st_map, res->key);
+//       snprintf(response->result, sizeof(response->result), "%d", 0);
+//       break;
+//     }
+//
+//     time_t expiration_at =
+//         time(NULL) + atoi(request->req_args + (2 * request->req_arg_size));
+//     res->expires_at = expiration_at;
+//     snprintf(response->result, sizeof(response->result), "%d", 1);
+//     break;
+//   }
+//   case Cmd_TTL: {
+//     Storage_hashmap_internal_ll *res = get_kv_in_hashmap(
+//         st_map, request->req_args + (1 * request->req_arg_size));
+//     if (res == NULL) {
+//       snprintf(response->result, sizeof(response->result), "%d", -2);
+//       break;
+//     }
+//     if (res != NULL && res->expires_at == 0) {
+//       snprintf(response->result, sizeof(response->result), "%d", -1);
+//       break;
+//     }
+//     if (res != NULL && time(NULL) > res->expires_at) {
+//       // NOTE: htis is redundant, we are iterating over hmap twice
+//       delete_kv_in_hashmap(st_map, res->key);
+//       snprintf(response->result, sizeof(response->result), "%d", -2);
+//       break;
+//     }
+//
+//     time_t remaining_time = res->expires_at - time(NULL);
+//     snprintf(response->result, sizeof(response->result), "%d",
+//              (int)remaining_time);
+//     break;
+//   }
+//   default: {
+//     // do nothing
+//   }
+//   }
+// }
 
 void normalize_command(Command *command) {
   if (command->command_type == Cmd_Set) {
