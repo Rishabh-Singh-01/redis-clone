@@ -39,26 +39,27 @@ void execute_resp_new(int client_fd) {
   init_resp_sm();
 
   int bytes_read_count = 0;
-  while ((bytes_read_count =
-              read(client_fd, req_parser.buffer, req_parser.buffer_size)) > 0) {
-    exec_req_parser(&req_parser, &command);
-    bool is_valid_cmd = validate_command(&command, &serializer);
-    if (is_valid_cmd) {
-      normalize_command(&command);
-      append_to_aof(&command);
-      execute_norm_command(&st_map, &response, &command);
-    }
-    send_response_only(client_fd, &response, &serializer);
-
-    reset_resp_sm();
+  bytes_read_count =
+      recv(client_fd, req_parser.buffer, req_parser.buffer_size, 0);
+  if (bytes_read_count == 0) {
+    close(client_fd);
+    return;
   }
-
-  cleanup_resp_sm();
-
-  if (bytes_read_count != 0) {
+  if (bytes_read_count < 0) {
     perror("Error: Issue with connectio during close\n");
+    return;
   }
-  close(client_fd);
+
+  exec_req_parser(&req_parser, &command);
+  bool is_valid_cmd = validate_command(&command, &serializer);
+  if (is_valid_cmd) {
+    normalize_command(&command);
+    append_to_aof(&command);
+    execute_norm_command(&st_map, &response, &command);
+  }
+  send_response_only(client_fd, &response, &serializer);
+  reset_resp_sm();
+  cleanup_resp_sm();
 }
 
 void load_aof() {
