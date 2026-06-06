@@ -1,6 +1,5 @@
 #include "./eventloop.h"
 #include "./../resp/resp.h"
-#include "./sock.h"
 #include <stdio.h>
 
 int run_event_loop(TCP_Server *tcp_server) {
@@ -22,10 +21,10 @@ int run_event_loop(TCP_Server *tcp_server) {
     for (int i = 0; i < n; i++) {
       if (events[i].ident == tcp_server->socket_fd) {
         int client_fd = accept(tcp_server->socket_fd, NULL, NULL);
-        printf("Accepted Conn: %d\n", client_fd);
         struct kevent ev;
         EV_SET(&ev, client_fd, EVFILT_READ, EV_ADD, 0, 0, NULL);
         kevent(kq, &ev, 1, NULL, 0, NULL);
+        printf("Accepted Conn: %d\n", client_fd);
       } else {
         execute_resp_new(events->ident);
       }
