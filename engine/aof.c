@@ -1,4 +1,5 @@
 #include "./aof.h"
+#include "./../resp/deserializer.h"
 
 // void append_to_aof(Request *request, Deserializer *deserializer) {
 //   // TODO: currently we are appending at each cmd, very slow
@@ -61,3 +62,30 @@
 //   };
 //   fclose(file_ptr);
 // }
+//
+
+void append_to_aof(Command *command) {
+  // TODO: currently we are appending at each cmd, very slow
+  if (!(command->command_type == Cmd_Set || command->command_type == Cmd_Del ||
+        command->command_type == Cmd_Expire)) {
+    return;
+  }
+
+  FILE *file_ptr = fopen("./obj/aof.txt", "a");
+  if (file_ptr == NULL) {
+    perror("Error opening file");
+    return;
+  }
+
+  char *buf = cmd_to_req(command);
+
+  size_t data_size = strlen(buf);
+  size_t bytes_written = fwrite(buf, 1, data_size, file_ptr);
+
+  free(buf);
+
+  if (bytes_written < data_size) {
+    printf("Warning: Did not write full buffer!\n");
+  };
+  fclose(file_ptr);
+}

@@ -117,6 +117,8 @@ void execute_norm_command(Storage_hashmap *st_map, Response *response,
     snprintf(response->args[0], sizeof(response->args[0]), "%d", deleted_count);
     break;
   }
+  case ICmd_Exat: {
+  }
   case Cmd_Expire: {
     Storage_hashmap_internal_ll *res =
         get_kv_in_hashmap(st_map, command->args[0]);

@@ -21,7 +21,6 @@ void exec_req_parser(Req_Parser *req_parser, Command *command) {
   char *token = strtok(temp, delimiter);
   int token_number = 0;
   while (token != NULL) {
-    printf("Token: %s\n", token);
     if (token_number == 0) {
       // Token (eg: *2), to "remove *" we are adding 1
       command->argc = atoi(token + 1) - 1;
@@ -39,6 +38,8 @@ void exec_req_parser(Req_Parser *req_parser, Command *command) {
         command->command_type = Cmd_Del;
       } else if (strcasecmp(token, "Expire") == 0) {
         command->command_type = Cmd_Expire;
+      } else if (strcasecmp(token, "Exat") == 0) {
+        command->command_type = ICmd_Exat;
       } else if (strcasecmp(token, "TTL") == 0) {
         command->command_type = Cmd_TTL;
       } else if (strcasecmp(token, "ECHO") == 0) {
@@ -69,4 +70,30 @@ void print_command(Command *command) {
     printf("Command Arg (%d): %s\n", idx, command->args[idx]);
     idx++;
   }
+}
+
+// TODO: make this better, mehtod is not good
+char *cmd_to_req(Command *command) {
+  char *buf = (char *)malloc(sizeof(char) * 100);
+  memset(buf, '\0', 100);
+
+  if (command->command_type == Cmd_Set) {
+    sprintf(buf,
+            "*%d\r\n$%d\r\n%s\r\n$%d\r\n%s\r\n$%d\r\n%s\r\n$%d\r\n%s\r\n$%"
+            "d\r\n%s\r\n",
+            5, 3, "set", (int)strlen(command->args[0]), command->args[0],
+            (int)strlen(command->args[1]), command->args[1],
+            (int)strlen(command->args[2]), command->args[2],
+            (int)strlen(command->args[3]), command->args[3]);
+  } else if (command->command_type == Cmd_Expire) {
+    sprintf(buf, "*%d\r\n$%d\r\n%s\r\n$%d\r\n%s\r\n$%d\r\n%s\r\n", 3, 4, "exat",
+            (int)strlen(command->args[0]), command->args[0],
+            (int)strlen(command->args[1]), command->args[1]);
+  } else if (command->command_type == Cmd_Del) {
+    sprintf(buf, "*%d\r\n$%d\r\n%s\r\n$%d\r\n%s\r\n", 2, 3, "del",
+            (int)strlen(command->args[0]), command->args[0]);
+  } else {
+  }
+
+  return buf;
 }
